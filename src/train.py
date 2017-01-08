@@ -36,6 +36,7 @@ def main(args):
     LR = args.learning_rate
     EPOCHS = args.epochs
     BATCH_SIZE = args.batch_size
+    FINE_TUNE = args.fine_tune
     MULTI_OUTPUT = args.multi_output
     if MULTI_OUTPUT and not args.multi_labels:
         print '--multi_labels is required if MULTI_OUTPUT is specified'
@@ -71,7 +72,7 @@ def main(args):
         train_size += len(os.listdir(train_folder_path))
         val_size += len(os.listdir(val_folder_path))
 
-    model = import_model()
+    model = import_model(FINE_TUNE)
 
     adam = Adam(lr=LR)
     if MULTI_OUTPUT:
@@ -179,6 +180,8 @@ if __name__ == '__main__':
         help='Number of epochs to run the model.')
     parser.add_argument('--batch_size', type=int, default=32,
         help='Batch size for the model.')
+    parser.add_argument('--fine_tune', action='store_true',
+        help='Specify to freeze the pretrained weights.')
     parser.add_argument('--early_stop', type=int, default=0,
         help='Number of epochs without improvement to wait before stopping. '
              'Default to run all epochs.')
