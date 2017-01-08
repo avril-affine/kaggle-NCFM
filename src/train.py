@@ -105,7 +105,8 @@ def main(args):
         rotation_range=ROTATION,
         width_shift_range=SHIFT,
         height_shift_range=SHIFT,
-        horizontal_flip=True)
+        horizontal_flip=FLIP_LR,
+        vertical_flip=FLIP_UD)
     if MULTI_OUTPUT:
         train_gen = MyDirectoryIterator(
             MULTI_LABEL_FILE,
