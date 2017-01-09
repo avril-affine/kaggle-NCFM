@@ -19,8 +19,7 @@ def main(args):
 
     # Directories
     HOME_DIR = args.home_dir
-    weights_dir = args.data_dir
-    model_dir = os.path.join(weights_dir, 'fold_' + sys.argv[2])
+    model_dir = args.data_dir
     model_path = os.path.join(model_dir, 'weights.h5')
     output_file = args.output_file
 
