@@ -1,32 +1,12 @@
 import os
 import sys
 import argparse
-import subprocess
 from keras.optimizers import Adam
 from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras.preprocessing.image import ImageDataGenerator
+from utils.run_folds import run_folds
 from my_iterator import MyDirectoryIterator
 from my_tensorboard import BatchTensorboard
-
-
-def run_folds(args):
-    kfolds = args.__dict__.pop('kfolds')
-    data_dir = args.__dict__.pop('data_dir')
-    fold_prefix = args.__dict__.pop('fold_prefix')
-    for fold in xrange(args.kfolds):
-        print '------------------Training Fold %i------------------' % fold
-        fold_dir = os.path.join(data_dir, fold_prefix, str(fold))
-        cmd = ['python', __file__,
-               '--data_dir', fold_dir]
-        for k, v in args.__dict__.iteritems():
-            option = '--' + k
-            if isinstance(v, bool):
-                if v:
-                    cmd += [option]
-            else:
-                if v is not None:
-                    cmd += [option, v]
-        subprocess.call(cmd, shell=True)
 
 
 def main(args):
@@ -59,7 +39,10 @@ def main(args):
     fold = os.path.basename(os.path.dirname(data_dir))
     train_dir = os.path.join(data_dir, 'train')
     val_dir = os.path.join(data_dir, 'val')
-    weights_dir = os.path.join(HOME_DIR, 'models', MODEL_NAME, fold)
+    if fold.startswith(args.fold_prefix):   # is running kfolds
+        weights_dir = os.path.join(HOME_DIR, 'models', MODEL_NAME, fold)
+    else:
+        weights_dir = os.path.join(HOME_DIR, 'models', MODEL_NAME)
 
     train_folders = os.listdir(train_dir)
     train_size = 0
@@ -194,9 +177,9 @@ if __name__ == '__main__':
     parser.add_argument('--shift', type=float, default=0.,
         help='Data augmentation: range for random shifts in x/y directions.')
     parser.add_argument('--flip_lr', action='store_true',
-        help='Data augmentation: whether to apply random horizontal flips.')
+        help='Data augmentation: specify to apply random horizontal flips.')
     parser.add_argument('--flip_ud', action='store_true',
-        help='Data augmentation: whether to apply random vertical flips.')
+        help='Data augmentation: specify to apply random vertical flips.')
     parser.add_argument('--multi_output', action='store_true',
         help='Give the model multiple outputs, currently bounding boxes.')
     parser.add_argument('--multi_labels', default=None,
