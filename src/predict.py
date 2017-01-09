@@ -5,6 +5,7 @@ import argparse
 import numpy as np
 from keras.models import Model, load_model
 from keras.preprocessing.image import ImageDataGenerator
+from src.utils import run_folds
 
 
 def main(args):

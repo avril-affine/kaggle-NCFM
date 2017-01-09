@@ -6,7 +6,7 @@ def run_folds(args):
     kfolds = args.__dict__.pop('kfolds')
     data_dir = args.__dict__.pop('data_dir')
     fold_prefix = args.__dict__.pop('fold_prefix')
-    for fold in xrange(args.kfolds):
+    for fold in xrange(kfolds):
         print '\n------------------Fold %i------------------\n' % fold
         fold_dir = os.path.join(data_dir, fold_prefix, str(fold))
         cmd = ['python', __file__,
