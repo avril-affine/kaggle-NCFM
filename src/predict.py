@@ -5,7 +5,7 @@ import argparse
 import numpy as np
 from keras.models import Model, load_model
 from keras.preprocessing.image import ImageDataGenerator
-from src.utils import run_folds
+from utils import run_folds
 
 
 def main(args):
@@ -106,7 +106,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.kfolds:
-        run_folds(args)
+        run_folds(args, __file__)
 
         # average results
         for fold in xrange(args.kfolds):

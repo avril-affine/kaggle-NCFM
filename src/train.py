@@ -191,6 +191,6 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     if args.kfolds:
-        run_folds(args)
+        run_folds(args, __file__)
     else:
         main(args)

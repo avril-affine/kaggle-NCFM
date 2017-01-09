@@ -2,6 +2,7 @@ import warnings
 import time
 import keras.callbacks as cbks
 from keras.models import Model
+from keras.engine.training import generator_queue
 
 
 class My_Model(Model):
@@ -208,8 +209,8 @@ class My_Model(Model):
                     if not isinstance(val_outs, list):
                         outs = [outs]
                     for l, o in zip(out_labels, val_outs):
-                        if l.startswith('val_')
-                        batch_logs[l] = o
+                        if l.startswith('val_'):
+                            batch_logs[l] = o
 
                 callbacks.on_batch_end(batch_index, batch_logs)
 

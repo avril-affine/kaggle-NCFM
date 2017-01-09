@@ -8,7 +8,7 @@ from keras.layers.normalization import BatchNormalization
 from keras.regularizers import l2
 from keras.models import Sequential
 from keras.applications.inception_v3 import InceptionV3
-from my_keras_model import MyModel as Model
+from my_keras_model import My_Model as Model
 
 
 def localizer(dropout=0., conv_l2=0.0005, fc_l2=0.01):
