@@ -1,11 +1,11 @@
 import os
-import sys
 import h5py
 import argparse
 import numpy as np
 from keras.models import Model, load_model
 from keras.preprocessing.image import ImageDataGenerator
 from utils import run_folds
+from models import OUTPUT_NAME
 
 
 def main(args):
@@ -24,9 +24,6 @@ def main(args):
     model_path = os.path.join(model_dir, 'weights.h5')
     output_file = args.output_file
 
-    # Output tensor (only required for multi output models)
-    output_tensor_name = args.output_tensor
-
     test_dir = os.path.join(HOME_DIR, 'data/test')
     test_folder = 'test_stg1'
     num_test = len(os.listdir(os.path.join(test_dir, test_folder)))
@@ -41,14 +38,9 @@ def main(args):
         horizontal_flip=FLIP)
 
     model = load_model(model_path)
-    if output_tensor:
-        for output in model.outputs:
-            if output.name == output_tensor_name:
-                output_tensor = output
-        else:
-            raise Exception('Cannot find output tensor for loaded model: '
-                            + output_tensor_name)
-        model = Model(model.input, output)
+    output_tensor = model.get_layer(OUTPUT_NAME).output
+    model = Model(model.input, output_tensor)
+    # TODO: hardcoded num classes
     preds = np.zeros((num_test, 8))
 
     for _ in xrange(N):
@@ -86,9 +78,6 @@ if __name__ == '__main__':
              'must be setup before running this file.')
     parser.add_argument('--fold_prefix', default='fold_',
         help='Prefix for each fold directory.')
-    parser.add_argument('--output_tensor', default=None,
-        help='Name of the output tensor. Only needed for multi '
-             'output models.')
     parser.add_argument('--num_test', type=int, default=1,
         help='Number of tests predictions to average per image.')
     parser.add_argument('--shear', type=float, default=0.,

@@ -7,6 +7,7 @@ from keras.preprocessing.image import ImageDataGenerator
 from utils.run_folds import run_folds
 from my_iterator import MyDirectoryIterator
 from my_tensorboard import BatchTensorboard
+from models import OUTPUT_NAME
 
 
 def main(args):
@@ -61,10 +62,10 @@ def main(args):
     if MULTI_OUTPUT:
         model.compile(optimizer=adam,
                       loss={'localize': 'mse',
-                            'classify': 'categorical_crossentropy'},
-                      metrics={'classify': 'accuracy'},
+                            OUTPUT_NAME: 'categorical_crossentropy'},
+                      metrics={OUTPUT_NAME: 'accuracy'},
                       loss_weights={'localize': args.multi_weight,
-                                    'classify': 1.})
+                                    OUTPUT_NAME: 1.})
     else:
         model.compile(optimizer=adam, loss='categorical_crossentropy',
                       metrics=['accuracy'])
