@@ -11,6 +11,9 @@ from keras.applications.inception_v3 import InceptionV3
 from my_keras_model import Model
 
 
+OUTPUT_NAME = 'output'
+
+
 def localizer(dropout=0., conv_l2=0.0005, fc_l2=0.01):
     model = Sequential()
     model.add(ZeroPadding2D((1, 1), input_shape=(3, 256, 256)))
@@ -54,7 +57,7 @@ def localizer(dropout=0., conv_l2=0.0005, fc_l2=0.01):
         model.add(SpatialDropout2D(dropout))
 
     model.add(Flatten())
-    model.add(Dense(4, W_regularizer=l2(fc_l2)))
+    model.add(Dense(4, W_regularizer=l2(fc_l2)), name=OUTPUT_NAME)
 
     return model
 
@@ -67,7 +70,7 @@ def classify(fine_tune=False):
     output = model.get_layer(index=-1).output
     output = AveragePooling2D((8, 8), strides=(8, 8), name='avg_pool')(output)
     output = Flatten(name='flatten')(output)
-    output = Dense(8, activation='softmax', name='output')(output)
+    output = Dense(8, activation='softmax', name=OUTPUT_NAME)(output)
 
     model = Model(model.input, output)
     return model
@@ -82,7 +85,22 @@ def localize_classify(fine_tune=False):
     localize = Convolution2D(4, 1, 1)(output)
     localize = GlobalAveragePooling2D(name='localize')(localize)
     classify = Convolution2D(8, 1, 1)(output)
-    classify = GlobalAveragePooling2D(name='classify')(classify)
+    classify = GlobalAveragePooling2D(name=OUTPUT_NAME)(classify)
+
+    model = Model(model.input, [localize, classify])
+    return model
+
+
+def localize_classify_deep(fine_tune=False):
+    model = InceptionV3(include_top=False, input_shape=(299, 299, 3))
+    if fine_tune:
+        for layer in model.layers:
+            layer.trainable = False
+    output = model.get_layer(index=-1).output
+    localize = Convolution2D(4, 1, 1)(output)
+    localize = GlobalAveragePooling2D(name='localize')(localize)
+    classify = Convolution2D(8, 1, 1)(output)
+    classify = GlobalAveragePooling2D(name=OUTPUT_NAME)(classify)
 
     model = Model(model.input, [localize, classify])
     return model

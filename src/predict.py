@@ -1,18 +1,16 @@
 import os
-import sys
 import h5py
 import argparse
 import numpy as np
-from keras.models import load_model
+from keras.models import Model, load_model
 from keras.preprocessing.image import ImageDataGenerator
-from utils.run_folds import run_folds
-from my_keras_model import Model
+from utils import run_folds
+from models import OUTPUT_NAME
 
 
 def main(args):
     # Test Augmentation
     N = args.num_test
-    BATCH_SIZE = args.batch_size
     SHEAR = args.shear
     ZOOM = args.zoom
     ROTATION = args.rotation
@@ -24,11 +22,7 @@ def main(args):
     HOME_DIR = args.home_dir
     model_dir = args.data_dir
     model_path = os.path.join(model_dir, 'weights.h5')
-    print model_path
     output_file = args.output_file
-
-    # Output tensor (only required for multi output models)
-    output_tensor_name = args.output_tensor
 
     test_dir = os.path.join(HOME_DIR, 'data/test')
     test_folder = 'test_stg1'
@@ -41,13 +35,12 @@ def main(args):
         rotation_range=ROTATION,
         width_shift_range=SHIFT,
         height_shift_range=SHIFT,
-        horizontal_flip=FLIP_LR,
-        vertical_flip=FLIP_UD)
+        horizontal_flip=FLIP)
 
     model = load_model(model_path)
-    if output_tensor_name:
-        output_tensor = model.get_layer(output_tensor_name).output
-        model = Model(model.input, output_tensor)
+    output_tensor = model.get_layer(OUTPUT_NAME).output
+    model = Model(model.input, output_tensor)
+    # TODO: hardcoded num classes
     preds = np.zeros((num_test, 8))
 
     for _ in xrange(N):
@@ -83,13 +76,8 @@ if __name__ == '__main__':
     parser.add_argument('--kfolds', type=int, default=0,
         help='Number of folds to run the model on. The directory structure '
              'must be setup before running this file.')
-    parser.add_argument('--batch_size', type=int, default=32,
-        help='Batch size for the model.')
     parser.add_argument('--fold_prefix', default='fold_',
         help='Prefix for each fold directory.')
-    parser.add_argument('--output_tensor', default=None,
-        help='Name of the output tensor. Only needed for multi '
-             'output models.')
     parser.add_argument('--num_test', type=int, default=1,
         help='Number of tests predictions to average per image.')
     parser.add_argument('--shear', type=float, default=0.,
@@ -106,30 +94,26 @@ if __name__ == '__main__':
         help='Data augmentation: specify to apply random vertical flips.')
     args = parser.parse_args()
 
-
     if args.kfolds:
-        kfolds = args.kfolds
-        data_dir = args.data_dir
-        fold_prefix = args.fold_prefix
         run_folds(args, __file__)
 
         # average results
-        for fold in xrange(kfolds):
-            fold_dir = os.path.join(data_dir, fold_prefix + str(fold))
+        for fold in xrange(args.kfolds):
+            fold_dir = os.path.join(args.data_dir, args.fold_prefix + str(fold))
             with h5py.File(os.path.join(fold_dir, args.output_file), 'r') as hf:
                 data = hf.get('results')[:]
             if fold == 0:
                 preds = np.array(data)
             else:
                 preds += np.array(data)
-        preds /= kfolds
+        preds /= args.kfolds
 
         with open('test_filenames.txt', 'r') as f:
             filenames = f.read()
             filenames = filenames.split()
 
         csv_file, _ = args.output_file.rsplit('.', 1)
-        with open(os.path.join(data_dir, csv_file + '.csv'), 'w') as f:
+        with open(os.path.join(args.data_dir, csv_file + '.csv'), 'w') as f:
             f.write('image,ALB,BET,DOL,LAG,NoF,OTHER,SHARK,YFT\n')
             for fname, pred in zip(filenames, preds):
                 pred = [str(x) for x in pred]
