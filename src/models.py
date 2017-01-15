@@ -7,7 +7,7 @@ from keras.layers.pooling import GlobalAveragePooling2D
 from keras.layers.normalization import BatchNormalization
 from keras.regularizers import l2
 from keras.models import Sequential
-from keras.applications.inception_v3 import InceptionV3
+from keras.applications.inception_v3 import InceptionV3, conv2d_bn
 from my_keras_model import My_Model as Model
 
 
@@ -97,6 +97,50 @@ def localize_classify_deep(fine_tune=False):
         for layer in model.layers:
             layer.trainable = False
     output = model.get_layer(index=-1).output
+    # 8x8x1024
+    branch1x1 = conv2d_bn(output, 160, 1, 1)
+
+    branch3x3 = conv2d_bn(output, 192, 1, 1)
+    branch3x3_1 = conv2d_bn(branch3x3, 192, 1, 3)
+    branch3x3_2 = conv2d_bn(branch3x3, 192, 3, 1)
+    branch3x3 = merge([branch3x3_1, branch3x3_2],
+                      mode='concat', concat_axis=-1)
+
+    branch3x3dbl = conv2d_bn(output, 224, 1, 1)
+    branch3x3dbl = conv2d_bn(output, 192, 3, 3)
+    branch3x3dbl_1 = conv2d_bn(branch3x3dbl, 192, 1, 3)
+    branch3x3dbl_2 = conv2d_bn(branch3x3dbl, 192, 3, 1)
+    branch3x3dbl = merge([branch3x3dbl_1, branch3x3dbl_2],
+                         mode='concat', concat_axis=-1)
+
+    branch_pool = AveragePooling2D(
+        (3, 3), strides=(1, 1), border_mode='same')(output)
+    branch_pool = conv2d_bn(branch_pool, 96, 1, 1)
+    output = merge([branch1x1, branch3x3, branch3x3dbl, branch_pool],
+                   mode='concat', concat_axis=-1)
+
+    # 8x8x512
+    branch1x1 = conv2d_bn(output, 80, 1, 1)
+
+    branch3x3 = conv2d_bn(output, 96, 1, 1)
+    branch3x3_1 = conv2d_bn(branch3x3, 96, 1, 3)
+    branch3x3_2 = conv2d_bn(branch3x3, 96, 3, 1)
+    branch3x3 = merge([branch3x3_1, branch3x3_2],
+                      mode='concat', concat_axis=-1)
+
+    branch3x3dbl = conv2d_bn(output, 112, 1, 1)
+    branch3x3dbl = conv2d_bn(output, 96, 3, 3)
+    branch3x3dbl_1 = conv2d_bn(branch3x3dbl, 96, 1, 3)
+    branch3x3dbl_2 = conv2d_bn(branch3x3dbl, 96, 3, 1)
+    branch3x3dbl = merge([branch3x3dbl_1, branch3x3dbl_2],
+                         mode='concat', concat_axis=-1)
+
+    branch_pool = AveragePooling2D(
+        (3, 3), strides=(1, 1), border_mode='same')(output)
+    branch_pool = conv2d_bn(branch_pool, 48, 1, 1)
+    output = merge([branch1x1, branch3x3, branch3x3dbl, branch_pool],
+                   mode='concat', concat_axis=-1)
+
     localize = Convolution2D(4, 1, 1)(output)
     localize = GlobalAveragePooling2D(name='localize')(localize)
     classify = Convolution2D(8, 1, 1)(output)
