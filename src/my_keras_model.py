@@ -1,11 +1,11 @@
 import warnings
 import time
 import keras.callbacks as cbks
-from keras.models import Model
+from keras.models import Model as Mdl
 from keras.engine.training import generator_queue
 
 
-class My_Model(Model):
+class Model(Mdl):
    def fit_generator(self, generator, samples_per_epoch, nb_epoch,
                       verbose=1, callbacks=None,
                       validation_data=None, nb_val_samples=None,

@@ -37,9 +37,12 @@ def main(args):
     HOME_DIR = args.home_dir
     MODEL_NAME = args.model_name
     data_dir = args.data_dir
-    fold = os.path.basename(os.path.dirname(data_dir))
     train_dir = os.path.join(data_dir, 'train')
     val_dir = os.path.join(data_dir, 'val')
+    if data_dir.endswith('/'):
+        fold = os.path.basename(data_dir[:-1])
+    else:
+        fold = os.path.basename(data_dir)
     if fold.startswith(args.fold_prefix):   # is running kfolds
         weights_dir = os.path.join(HOME_DIR, 'models', MODEL_NAME, fold)
     else:
