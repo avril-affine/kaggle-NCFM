@@ -3,14 +3,16 @@ import sys
 import h5py
 import argparse
 import numpy as np
-from keras.models import Model, load_model
+from keras.models import load_model
 from keras.preprocessing.image import ImageDataGenerator
-from utils import run_folds
+from utils.run_folds import run_folds
+from my_keras_model import Model
 
 
 def main(args):
     # Test Augmentation
     N = args.num_test
+    BATCH_SIZE = args.batch_size
     SHEAR = args.shear
     ZOOM = args.zoom
     ROTATION = args.rotation
@@ -22,6 +24,7 @@ def main(args):
     HOME_DIR = args.home_dir
     model_dir = args.data_dir
     model_path = os.path.join(model_dir, 'weights.h5')
+    print model_path
     output_file = args.output_file
 
     # Output tensor (only required for multi output models)
@@ -38,17 +41,13 @@ def main(args):
         rotation_range=ROTATION,
         width_shift_range=SHIFT,
         height_shift_range=SHIFT,
-        horizontal_flip=FLIP)
+        horizontal_flip=FLIP_LR,
+        vertical_flip=FLIP_UD)
 
     model = load_model(model_path)
-    if output_tensor:
-        for output in model.outputs:
-            if output.name == output_tensor_name:
-                output_tensor = output
-        else:
-            raise Exception('Cannot find output tensor for loaded model: '
-                            + output_tensor_name)
-        model = Model(model.input, output)
+    if output_tensor_name:
+        output_tensor = model.get_layer(output_tensor_name).output
+        model = Model(model.input, output_tensor)
     preds = np.zeros((num_test, 8))
 
     for _ in xrange(N):
@@ -84,6 +83,8 @@ if __name__ == '__main__':
     parser.add_argument('--kfolds', type=int, default=0,
         help='Number of folds to run the model on. The directory structure '
              'must be setup before running this file.')
+    parser.add_argument('--batch_size', type=int, default=32,
+        help='Batch size for the model.')
     parser.add_argument('--fold_prefix', default='fold_',
         help='Prefix for each fold directory.')
     parser.add_argument('--output_tensor', default=None,
@@ -105,26 +106,30 @@ if __name__ == '__main__':
         help='Data augmentation: specify to apply random vertical flips.')
     args = parser.parse_args()
 
+
     if args.kfolds:
+        kfolds = args.kfolds
+        data_dir = args.data_dir
+        fold_prefix = args.fold_prefix
         run_folds(args, __file__)
 
         # average results
-        for fold in xrange(args.kfolds):
-            fold_dir = os.path.join(args.data_dir, args.fold_prefix + str(fold))
+        for fold in xrange(kfolds):
+            fold_dir = os.path.join(data_dir, fold_prefix + str(fold))
             with h5py.File(os.path.join(fold_dir, args.output_file), 'r') as hf:
                 data = hf.get('results')[:]
             if fold == 0:
                 preds = np.array(data)
             else:
                 preds += np.array(data)
-        preds /= args.kfolds
+        preds /= kfolds
 
         with open('test_filenames.txt', 'r') as f:
             filenames = f.read()
             filenames = filenames.split()
 
         csv_file, _ = args.output_file.rsplit('.', 1)
-        with open(os.path.join(args.data_dir, csv_file + '.csv'), 'w') as f:
+        with open(os.path.join(data_dir, csv_file + '.csv'), 'w') as f:
             f.write('image,ALB,BET,DOL,LAG,NoF,OTHER,SHARK,YFT\n')
             for fname, pred in zip(filenames, preds):
                 pred = [str(x) for x in pred]

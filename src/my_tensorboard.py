@@ -9,12 +9,19 @@ class BatchTensorboard(TensorBoard):
                                                 write_graph,
                                                 write_images)
         self.batch_freq = batch_freq
+        self.prev_batch = 0
+        self.real_batch = 0
 
     def on_epoch_end(self, epoch, logs={}):
         pass
 
     def on_batch_end(self, batch, logs={}):
         import tensorflow as tf
+
+        if batch == 0:
+            self.real_batch = self.prev_batch
+        batch += self.real_batch
+        self.prev_batch = batch
 
         if self.model.validation_data and batch % self.batch_freq == 0:
             if self.model.uses_learning_phase:
