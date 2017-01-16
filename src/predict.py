@@ -2,10 +2,11 @@ import os
 import h5py
 import argparse
 import numpy as np
-from keras.models import Model, load_model
+from keras.models import load_model
 from keras.preprocessing.image import ImageDataGenerator
 from utils import run_folds
 from models import OUTPUT_NAME
+from my_keras_model import Model
 
 
 def main(args):

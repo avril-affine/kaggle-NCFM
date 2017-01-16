@@ -8,7 +8,7 @@ from keras.layers.normalization import BatchNormalization
 from keras.regularizers import l2
 from keras.models import Sequential
 from keras.applications.inception_v3 import InceptionV3, conv2d_bn
-from my_keras_model import My_Model as Model
+from my_keras_model import Model
 
 
 OUTPUT_NAME = 'output'
