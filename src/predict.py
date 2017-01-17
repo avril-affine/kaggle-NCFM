@@ -12,6 +12,7 @@ from my_keras_model import Model
 def main(args):
     # Test Augmentation
     N = args.num_test
+    BATCH_SIZE = args.batch_size
     SHEAR = args.shear
     ZOOM = args.zoom
     ROTATION = args.rotation
@@ -81,6 +82,8 @@ if __name__ == '__main__':
         help='Prefix for each fold directory.')
     parser.add_argument('--num_test', type=int, default=1,
         help='Number of tests predictions to average per image.')
+    parser.add_argument('--batch_size', type=int, default=32,
+        help='Batch size for the model.')
     parser.add_argument('--shear', type=float, default=0.,
         help='Data augmentation: shear intensity in radians.')
     parser.add_argument('--zoom', type=float, default=0.,
