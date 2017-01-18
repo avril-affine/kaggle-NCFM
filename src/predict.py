@@ -100,12 +100,14 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     kfolds = args.kfolds
+    data_dir = args.data_dir
+    fold_prefix = args.fold_prefix
     if kfolds:
         run_folds(args, __file__)
 
         # average results
         for fold in xrange(kfolds):
-            fold_dir = os.path.join(args.data_dir, args.fold_prefix + str(fold))
+            fold_dir = os.path.join(data_dir, fold_prefix + str(fold))
             with h5py.File(os.path.join(fold_dir, args.output_file), 'r') as hf:
                 data = hf.get('results')[:]
             if fold == 0:
@@ -119,7 +121,7 @@ if __name__ == '__main__':
             filenames = filenames.split()
 
         csv_file, _ = args.output_file.rsplit('.', 1)
-        with open(os.path.join(args.data_dir, csv_file + '.csv'), 'w') as f:
+        with open(os.path.join(data_dir, csv_file + '.csv'), 'w') as f:
             f.write('image,ALB,BET,DOL,LAG,NoF,OTHER,SHARK,YFT\n')
             for fname, pred in zip(filenames, preds):
                 pred = [str(x) for x in pred]
