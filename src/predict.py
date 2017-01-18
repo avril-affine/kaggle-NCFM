@@ -124,7 +124,7 @@ if __name__ == '__main__':
         with open(os.path.join(data_dir, csv_file + '.csv'), 'w') as f:
             f.write('image,ALB,BET,DOL,LAG,NoF,OTHER,SHARK,YFT\n')
             for fname, pred in zip(filenames, preds):
-                pred = [str(x) for x in pred]
+                pred = [str(max(0, x)) for x in pred]
                 f.write('{},{}\n'.format(fname, ','.join(pred)))
     else:
         main(args)
