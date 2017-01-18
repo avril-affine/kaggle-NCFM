@@ -37,7 +37,8 @@ def main(args):
         rotation_range=ROTATION,
         width_shift_range=SHIFT,
         height_shift_range=SHIFT,
-        horizontal_flip=FLIP)
+        horizontal_flip=FLIP_LR,
+        vertical_flip=FLIP_UD)
 
     model = load_model(model_path)
     output_tensor = model.get_layer(OUTPUT_NAME).output
