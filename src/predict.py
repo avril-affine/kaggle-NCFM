@@ -99,11 +99,12 @@ if __name__ == '__main__':
         help='Data augmentation: specify to apply random vertical flips.')
     args = parser.parse_args()
 
-    if args.kfolds:
+    kfolds = args.kfolds
+    if kfolds:
         run_folds(args, __file__)
 
         # average results
-        for fold in xrange(args.kfolds):
+        for fold in xrange(kfolds):
             fold_dir = os.path.join(args.data_dir, args.fold_prefix + str(fold))
             with h5py.File(os.path.join(fold_dir, args.output_file), 'r') as hf:
                 data = hf.get('results')[:]
@@ -111,7 +112,7 @@ if __name__ == '__main__':
                 preds = np.array(data)
             else:
                 preds += np.array(data)
-        preds /= args.kfolds
+        preds /= kfolds
 
         with open('test_filenames.txt', 'r') as f:
             filenames = f.read()
