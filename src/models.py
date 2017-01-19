@@ -86,6 +86,7 @@ def localize_classify(fine_tune=False):
     localize = GlobalAveragePooling2D(name='localize')(localize)
     classify = Convolution2D(8, 1, 1)(output)
     classify = GlobalAveragePooling2D(name=OUTPUT_NAME)(classify)
+    classify = Activation('softmax', name=OUTPUT_NAME)(classify)
 
     model = Model(model.input, [localize, classify])
     return model
@@ -144,7 +145,8 @@ def localize_classify_deep(fine_tune=False):
     localize = Convolution2D(4, 1, 1)(output)
     localize = GlobalAveragePooling2D(name='localize')(localize)
     classify = Convolution2D(8, 1, 1)(output)
-    classify = GlobalAveragePooling2D(name=OUTPUT_NAME)(classify)
+    classify = GlobalAveragePooling2D()(classify)
+    classify = Activation('softmax', name=OUTPUT_NAME)(classify)
 
     model = Model(model.input, [localize, classify])
     return model
