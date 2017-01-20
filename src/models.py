@@ -2,7 +2,7 @@ from keras.layers.convolutional import (Convolution2D, MaxPooling2D,
                                         ZeroPadding2D)
 from keras.layers.core import (Dense, Dropout, Flatten, Activation,
                                SpatialDropout2D)
-from keras.layers import AveragePooling2D
+from keras.layers import AveragePooling2D, merge
 from keras.layers.pooling import GlobalAveragePooling2D
 from keras.layers.normalization import BatchNormalization
 from keras.regularizers import l2
