@@ -6,15 +6,19 @@ from keras.preprocessing.image import load_img, img_to_array, DirectoryIterator
 
 class MyDirectoryIterator(DirectoryIterator):
 
-    def __init__(self, box_file, directory, image_data_generator,
-                 target_size=(256, 256), color_mode='rgb',
-                 dim_ordering='default',
+    def __init__(self, directory, image_data_generator, box_file=None,
+                 localizer=None, img_info=None, target_size=(256, 256),
+                 color_mode='rgb', dim_ordering='default',
                  classes=None, class_mode='categorical',
                  batch_size=32, shuffle=True, seed=None,
                  save_to_dir=None, save_prefix='', save_format='jpeg',
                  follow_links=False):
-        with open(box_file, 'r') as f:
-            self.boxes = json.loads(f.read())
+        if box_file:
+            with open(box_file, 'r') as f:
+                self.boxes = json.loads(f.read())
+        if localizer:
+            self.localizer = localizer
+            self.img_info = img_info
         super(MyDirectoryIterator, self).__init__(
             directory, image_data_generator,
             target_size=target_size, color_mode=color_mode,
@@ -34,9 +38,24 @@ class MyDirectoryIterator(DirectoryIterator):
         for i, j in enumerate(index_array):
             fname = self.filenames[j]
             img = load_img(os.path.join(self.directory, fname),
-                           grayscale=grayscale,
-                           target_size=self.target_size)
-            x = img_to_array(img, dim_ordering=self.dim_ordering)
+                           grayscale=grayscale)
+
+            # cropped images
+            if self.localizer:
+                pred_boxes = self.localizer.predict(
+                        img.resize((self.target_size[1], self.target_size[0])))
+                resize = np.zeros(4)
+                resize[[1, 3]] = img_info[name]['size'][0]
+                resize[[0, 2]] = img_info[name]['size'][1]
+                resize /= 299.          # input size
+                pred_boxes[i] *= resize
+                x = img.crop((pred_boxes[0],
+                              pred_boxes[1],
+                              pred_boxes[0] + pred_boxes[2],
+                              pred_boxes[1] + pred_boxes[3]))
+            else:
+                img = img.resize((self.target_size[1], self.target_size[0]))
+                x = img_to_array(img, dim_ordering=self.dim_ordering)
             x = self.image_data_generator.random_transform(x)
             x = self.image_data_generator.standardize(x)
             batch_x[i] = x
@@ -58,59 +77,16 @@ class MyDirectoryIterator(DirectoryIterator):
             batch_y = np.zeros((len(batch_x), self.nb_class), dtype='float32')
             for i, label in enumerate(self.classes[index_array]):
                 batch_y[i, label] = 1.
-            filenames = np.array(self.filenames)[index_array]
-            basenames = [os.path.basename(x) for x in filenames]
-            batch_y_box = np.zeros((len(batch_x), 4), dtype='float32')
-            for i, name in enumerate(basenames):
-                batch_y_box[i] = self.boxes[name]
+
+            # bounding box labels
+            if self.boxes:
+                filenames = np.array(self.filenames)[index_array]
+                basenames = [os.path.basename(x) for x in filenames]
+                batch_y_box = np.zeros((len(batch_x), 4), dtype='float32')
+                for i, name in enumerate(basenames):
+                    batch_y_box[i] = self.boxes[name]
+                batch_y = [batch_y_box, batch_y]
         else:
             return batch_x
-        return batch_x, [batch_y_box, batch_y]
+        return batch_x, batch_y
 
-
-# class LCGenerator(object):
-# 
-#     def __init__(self, img_dir, box_file, batch_size, target_size,
-#                  shuffle=False):
-#         """Localize and Classify Generator.
-#         
-#         Arguments:
-#             img_dir (str): Path to folders containing images with each folder
-#                 corresponding to a label.
-#             box_file (str): Json file containing bounding boxes for each image.
-#             batch_size (int): Batch size.
-#             target_size (tuple): Size of returned images (width, height).
-#         """
-#         self.imgs, self.labels = self._parse_dirs(img_dir)
-#         with open(box_file, 'r') as f:
-#             boxes = json.loads(f.read())
-#         self.boxes = [boxes[os.path.basename(x)] for x in self.train_imgs]
-#         self.batch_size = batch_size
-#         self.target_size = target_size
-#         self.shuffle = shuffle
-#         self.N = len(self.imgs)
-#         self.current_index = 0
-#         self.index_array = np.arange(self.N)
-# 
-#     def _parse_dirs(self, img_dir):
-#         imgs = []
-#         labels = []
-#         
-#         folders = [x for x in os.listdir(img_dir) if not x.startswith('.')]
-#         for folder in folders:
-#             folder_path = os.path.join(img_dir, folder)
-#             img_paths = [os.path.join(folder_path, x)
-#                          for x in os.listdir(folder_path)
-#                          if x.endswith('.jpg')]
-#             imgs.extend(img_paths)
-#             labels.extend([folder] * len(img_paths))
-# 
-#         return np.array(imgs), np.array(labels)
-# 
-#     def next(self):
-#         if self.shuffle and self.current_index == 0:
-#             self.index_array = np.random.permutation(self.index_array)
-# 
-#         mask = self.index_array[self.current_index:
-#                                 self.current_index + self.batch_size]
-#         batch_x

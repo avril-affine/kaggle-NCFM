@@ -1,9 +1,11 @@
 import os
 import sys
+import json
 import argparse
 from keras.optimizers import Adam
 from keras.callbacks import ModelCheckpoint, EarlyStopping
 from keras.preprocessing.image import ImageDataGenerator
+from keras.models import load_model
 from utils.run_folds import run_folds
 from my_iterator import MyDirectoryIterator
 from my_tensorboard import BatchTensorboard
@@ -11,6 +13,22 @@ from models import OUTPUT_NAME
 
 
 def main(args):
+    # Localize model
+    CROP_MODEL = args.crop_model
+    if CROP_MODEL:
+        if not args.crop_output_name:
+            print 'Must specify --crop_output_name if using --crop_model.'
+            sys.exit(1)
+        if not os.path.exists(args.img_info):
+            print ('Must specify a correct path for --img_info if using'
+                   '--crop_model')
+            sys.exit(1)
+        with open(args.img_info, 'r') as f:
+            img_info = json.loads(f.read())
+        localize = load_model(crop_model)
+        output = localize.get_layer(args.crop_output_name).output
+        localize = Model(localize.input, output)
+
     # Model parameters
     module, function = args.import_model.rsplit('.', 1)
     import_model = __import__(module, fromlist=[function]).__dict__[function]
@@ -86,6 +104,7 @@ def main(args):
     if not os.path.exists(weights_dir):
         os.makedirs(weights_dir)
 
+    # Train/Val Image Generators
     train_gen = ImageDataGenerator(
         rescale=1. / 255,
         shear_range=SHEAR,
@@ -97,9 +116,19 @@ def main(args):
         vertical_flip=FLIP_UD)
     if MULTI_OUTPUT:
         train_gen = MyDirectoryIterator(
-            MULTI_LABEL_FILE,
             train_dir,
             train_gen,
+            box_file=MULTI_LABEL_FILE,
+            target_size=(299, 299),
+            batch_size=BATCH_SIZE,
+            shuffle=True,
+            class_mode='categorical')
+    elif CROP_MODEL:
+        train_gen = MyDirectoryIterator(
+            train_dir,
+            train_gen,
+            localizer=localize,
+            img_info=img_info,
             target_size=(299, 299),
             batch_size=BATCH_SIZE,
             shuffle=True,
@@ -115,9 +144,19 @@ def main(args):
     val_gen = ImageDataGenerator(rescale=1. / 255)
     if MULTI_OUTPUT:
         val_gen = MyDirectoryIterator(
-            MULTI_LABEL_FILE,
             val_dir,
             val_gen,
+            box_file=MULTI_LABEL_FILE,
+            target_size=(299, 299),
+            batch_size=BATCH_SIZE,
+            shuffle=True,
+            class_mode='categorical')
+    elif CROP_MODEL:
+        val_gen = MyDirectoryIterator(
+            val_dir,
+            val_gen,
+            localizer=localize,
+            img_info=img_info,
             target_size=(299, 299),
             batch_size=BATCH_SIZE,
             shuffle=True,
@@ -156,6 +195,12 @@ if __name__ == '__main__':
         help='Model to import and run in the form of '
              'path.to.script.function: where `path.to.script` is the module '
              'to import and `function` is the function within the module.')
+    parser.add_argument('--crop_model', default=None,
+        help='Path to crop model weights .h5 file')
+    parser.add_argument('--crop_output_name', default=None,
+        help='Name of localize output layer.')
+    parser.add_argument('--img_info', default='labels/img_info.json',
+        help='Path to json file containing map to original image size.')
     parser.add_argument('--kfolds', type=int, default=0,
         help='Number of folds to run the model on. The directory structure '
              'must be setup before running this file.')

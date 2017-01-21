@@ -29,7 +29,7 @@ class BatchTensorboard(TensorBoard):
                 val_data = self.model.validation_data[:cut_v_data] + [0]
                 tensors = self.model.inputs + [K.learning_phase()]
             else:
-                vaL_data = self.model.vaidation_data
+                val_data = self.model.vaidation_data
                 tensors = self.model.inputs
             feed_dict = dict(zip(tensors, val_data))
             result = self.sess.run([self.merged], feed_dict=feed_dict)
