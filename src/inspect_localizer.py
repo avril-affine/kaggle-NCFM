@@ -24,7 +24,7 @@ def main(args):
                         pred[1] + pred[3]))
 
         img.show()
-        raw_input()     # wait for input
+        raw_input('Press Enter to continue...')     # wait for input
 
 
 if __name__ == '__main__':
