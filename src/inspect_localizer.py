@@ -17,13 +17,14 @@ def main(args):
 
         pred = model.predict(img)
 
-        draw = ImageDraw(img)
+        draw = ImageDraw.Draw(img)
         draw.rectangle((pred[0],
                         pred[1],
                         pred[0] + pred[2],
                         pred[1] + pred[3]))
 
         img.show()
+        raw_input()     # wait for input
 
 
 if __name__ == '__main__':
