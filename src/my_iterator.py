@@ -16,9 +16,8 @@ class MyDirectoryIterator(DirectoryIterator):
         if box_file:
             with open(box_file, 'r') as f:
                 self.boxes = json.loads(f.read())
-        if localizer:
-            self.localizer = localizer
-            self.img_info = img_info
+        self.localizer = localizer
+        self.img_info = img_info
         super(MyDirectoryIterator, self).__init__(
             directory, image_data_generator,
             target_size=target_size, color_mode=color_mode,
