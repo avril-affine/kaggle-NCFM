@@ -38,12 +38,12 @@ def main():
     if not os.path.exists('data.h5'):
         data, label, label_name = load_data()
 
-        with open ('data.h5', 'w') as hf:
+        with h5py.File('data.h5', 'w') as hf:
             hf.create_dataset('data', data=data)
             hf.create_dataset('label', data=label)
             hf.create_dataset('label_name', data=label_name)
     else:
-        with open('data.h5', 'r') as hf:
+        with h5py.File('data.h5', 'r') as hf:
             data = np.array(hf.get('data')[:])
             label = np.array(hf.get('label')[:])
             label_name = np.array(hf.get('label_name')[:])
