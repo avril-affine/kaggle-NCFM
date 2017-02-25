@@ -58,10 +58,7 @@ def main(args):
     data_dir = args.data_dir
     train_dir = os.path.join(data_dir, 'train')
     val_dir = os.path.join(data_dir, 'val')
-    if data_dir.endswith('/'):
-        fold = os.path.basename(data_dir[:-1])
-    else:
-        fold = os.path.basename(data_dir)
+    fold = os.path.basename(data_dir.rstrip('/'))
     if fold.startswith(args.fold_prefix):   # is running kfolds
         weights_dir = os.path.join(HOME_DIR, 'models', MODEL_NAME, fold)
     else:
@@ -173,7 +170,7 @@ def main(args):
             shuffle=True,
             class_mode='categorical')
     elif BOX_MODEL:
-        train_gen = MyDirectoryIterator(
+        val_gen = MyDirectoryIterator(
             train_dir,
             train_gen,
             box_file=MULTI_LABEL_FILE,
