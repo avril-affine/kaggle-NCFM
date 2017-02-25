@@ -41,6 +41,7 @@ def main(args):
         print '--multi_labels is required if MULTI_OUTPUT is specified'
         sys.exit(1)
     MULTI_LABEL_FILE = args.multi_labels
+    BOX_MODEL = args.box_model
     EARLY_STOP = args.early_stop
 
     # Data augmentation parameters
@@ -133,6 +134,16 @@ def main(args):
             batch_size=BATCH_SIZE,
             shuffle=True,
             class_mode='categorical')
+    elif BOX_MODEL:
+        train_gen = MyDirectoryIterator(
+            train_dir,
+            train_gen,
+            box_file=MULTI_LABEL_FILE,
+            box_model=True,
+            target_size=(299,299),
+            batch_size=BATCH_SIZE,
+            shuffle=True,
+            class_mode='categorical')
     else:
         train_gen = train_gen.flow_from_directory(
             train_dir,
@@ -158,6 +169,16 @@ def main(args):
             localizer=localize,
             img_info=img_info,
             target_size=(299, 299),
+            batch_size=BATCH_SIZE,
+            shuffle=True,
+            class_mode='categorical')
+    elif BOX_MODEL:
+        train_gen = MyDirectoryIterator(
+            train_dir,
+            train_gen,
+            box_file=MULTI_LABEL_FILE,
+            box_model=True,
+            target_size=(299,299),
             batch_size=BATCH_SIZE,
             shuffle=True,
             class_mode='categorical')
@@ -231,6 +252,8 @@ if __name__ == '__main__':
         help='Data augmentation: specify to apply random vertical flips.')
     parser.add_argument('--multi_output', action='store_true',
         help='Give the model multiple outputs, currently bounding boxes.')
+    parser.add_argument('--box_model', action='store_true',
+        help='Only bounding box output.')
     parser.add_argument('--multi_labels', default=None,
         help='Required if multi_output is set. Path to a json file containing '
              'maps from img to second label, currently bounding boxes.')

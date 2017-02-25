@@ -12,12 +12,13 @@ class MyDirectoryIterator(DirectoryIterator):
                  classes=None, class_mode='categorical',
                  batch_size=32, shuffle=True, seed=None,
                  save_to_dir=None, save_prefix='', save_format='jpeg',
-                 follow_links=False):
+                 follow_links=False, box_model=False):
         if box_file:
             with open(box_file, 'r') as f:
                 self.boxes = json.loads(f.read())
         self.localizer = localizer
         self.img_info = img_info
+        self.box_model = box_model
         super(MyDirectoryIterator, self).__init__(
             directory, image_data_generator,
             target_size=target_size, color_mode=color_mode,
@@ -85,6 +86,9 @@ class MyDirectoryIterator(DirectoryIterator):
                 for i, name in enumerate(basenames):
                     batch_y_box[i] = self.boxes[name]
                 batch_y = [batch_y_box, batch_y]
+
+            if self.box_model:
+                batch_y = batch_y_box
         else:
             return batch_x
         return batch_x, batch_y

@@ -105,6 +105,7 @@ def localize_classify_deep(fine_tune=False):
 
 
 def localize(fine_tune=False):
+    from keras.models import Model
     model = InceptionV3(include_top=False, input_shape=(299, 299, 3))
     if fine_tune:
         for layer in model.layers:
