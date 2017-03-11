@@ -30,7 +30,7 @@ class MyDirectoryIterator(DirectoryIterator):
         super(MyDirectoryIterator, self).__init__(
             directory, image_data_generator,
             target_size=target_size, color_mode=color_mode,
-            classes=classes, class_mode=class_mode,
+            classes=classes, class_mode=None,
             dim_ordering=dim_ordering,
             batch_size=batch_size, shuffle=shuffle, seed=seed,
             save_to_dir=save_to_dir, save_prefix=save_prefix,
@@ -45,6 +45,7 @@ class MyDirectoryIterator(DirectoryIterator):
                 raise Exception('img_info must be specified along '
                                 'with localizer')
 
+        self.class_mode = class_mode
         self.bbox_dict = bbox_dict
         self.img_info  = img_info
         self.localizer = localizer
@@ -116,7 +117,7 @@ class MyDirectoryIterator(DirectoryIterator):
             basenames = [os.path.basename(x) for x in filenames]
             batch_y = np.zeros((current_batch_size, 4), dtype='float32')
             for i, name in enumerate(basenames):
-                batch_y[i] = self.boxes[name]
+                batch_y[i] = self.bbox_dict[name]
         else:
             return batch_x
         return batch_x, batch_y

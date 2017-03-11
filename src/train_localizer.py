@@ -2,15 +2,14 @@
 import os
 import sys
 import json
-import argparse
-import src.utils.base_parser
+import utils.base_parser as base_parser
 from keras.optimizers import Adam
 from keras.callbacks import ModelCheckpoint
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import load_model
 from utils.run_folds import run_folds
-from src.my_iterator import MyDirectoryIterator
-from src.my_tensorboard import BatchTensorboard
+from my_iterator import MyDirectoryIterator
+from my_tensorboard import BatchTensorboard
 
 
 def main(args):
@@ -98,7 +97,7 @@ def main(args):
     val_gen = ImageDataGenerator(
         featurewise_center=True,
         featurewise_std_normalization=True)
-    train_gen = MyDirectoryIterator(
+    val_gen = MyDirectoryIterator(
         val_dir,
         val_gen,
         target_size=(299, 299),

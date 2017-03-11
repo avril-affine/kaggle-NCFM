@@ -1,4 +1,4 @@
-import parser
+import argparse
 
 
 def base_parser(description):
@@ -59,9 +59,6 @@ def train_arguments(parser):
     parser.add_argument(
         '--epochs', type=int, default=10,
         help='Number of epochs to run the model.')
-    parser.add_argument(
-        '--batch_size', type=int, default=32,
-        help='Batch size for the model.')
     parser.add_argument(
         '--fine_tune', action='store_true',
         help='Only retrain last layers.')
