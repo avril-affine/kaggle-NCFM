@@ -81,7 +81,7 @@ class MyDirectoryIterator(DirectoryIterator):
                 pred_boxes = np.maximum(pred_boxes, 0)
                 pred_boxes[2] += pred_boxes[0]
                 pred_boxes[3] += pred_boxes[1]
-                pred_boxes[2:]] = np.maximum(pred_boxes[2:], pred_boxes[:2])
+                pred_boxes[2:] = np.maximum(pred_boxes[2:], pred_boxes[:2])
                 pred_boxes[[0, 2]] = np.minimum(pred_boxes[[0, 2]], self.img_info[fname]['size'][0])
                 pred_boxes[[1, 3]] = np.minimum(pred_boxes[[1, 3]], self.img_info[fname]['size'][1])
                 pred_boxes = pred_boxes.astype(int)
