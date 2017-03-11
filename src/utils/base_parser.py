@@ -62,5 +62,8 @@ def train_arguments(parser):
     parser.add_argument(
         '--batch_size', type=int, default=32,
         help='Batch size for the model.')
+    parser.add_argument(
+        '--fine_tune', action='store_true',
+        help='Only retrain last layers.')
 
     return parser
