@@ -1,15 +1,16 @@
+"""train_localizer.py: Train a localize model using keras."""
 import os
 import sys
 import json
 import argparse
+import src.utils.base_parser
 from keras.optimizers import Adam
 from keras.callbacks import ModelCheckpoint
 from keras.preprocessing.image import ImageDataGenerator
 from keras.models import load_model
 from utils.run_folds import run_folds
-from my_iterator import MyDirectoryIterator
-from my_tensorboard import BatchTensorboard
-from models import OUTPUT_NAME
+from src.my_iterator import MyDirectoryIterator
+from src.my_tensorboard import BatchTensorboard
 
 
 def main(args):
@@ -117,61 +118,15 @@ def main(args):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(
-        description='Train localizer a keras model with kfolds or a one run.')
-    parser.add_argument(
-        '--home_dir', required=True,
-        help='Path to the root directory of the project')
-    parser.add_argument(
-        '--data_dir', required=True,
-        help='Path to a data directory. If kfolds are specified, '
-        'the directory should contain a directory for each fold 0 to k-1, '
-        'else it should contain a train and val folder.')
-    parser.add_argument(
-        '--model_name', required=True,
-        help='Name of the model. This will also be the name of the directory '
-             'that stores the model weights and run data.')
-    parser.add_argument(
-        '--import_model', required=True,
-        help='Model to import and run in the form of '
-             'path.to.script.function: where `path.to.script` is the module '
-             'to import and `function` is the function within the module.')
+    parser = base_parser.base_parser(
+        'Train a keras model localizer with kfolds or one run.')
+    parser = base_parser.train_arguments(parser)
     parser.add_argument(
         '--bbox_file', required=True,
         help='Path to a json file containing a map from img basename to '
              'bounding box.')
-    parser.add_argument(
-        '--learning_rate', type=float, default=0.0001,
-        help='Learning rate of the model.')
-    parser.add_argument(
-        '--epochs', type=int, default=10,
-        help='Number of epochs to run the model.')
-    parser.add_argument(
-        '--batch_size', type=int, default=32,
-        help='Batch size for the model.')
-    parser.add_argument(
-        '--shear', type=float, default=0.,
-        help='Data augmentation: shear intensity in radians.')
-    parser.add_argument(
-        '--zoom', type=float, default=0.,
-        help='Data augmentation: range for random zoom.')
-    parser.add_argument(
-        '--rotation', type=float, default=0.,
-        help='Data augmentation: range for random rotation in degrees.')
-    parser.add_argument(
-        '--shift', type=float, default=0.,
-        help='Data augmentation: range for random shifts in x/y directions.')
-    parser.add_argument(
-        '--fine_tune', action='store_true',
-        help='Specify to freeze the pretrained weights.')
-    parser.add_argument(
-        '--flip_lr', action='store_true',
-        help='Data augmentation: specify to apply random horizontal flips.')
-    parser.add_argument(
-        '--flip_ud', action='store_true',
-        help='Data augmentation: specify to apply random vertical flips.')
-    args = parser.parse_args()
 
+    args = parser.parse_args()
     if args.kfolds:
         run_folds(args, __file__)
     else:

@@ -11,6 +11,9 @@ class MyDirectoryIterator(DirectoryIterator):
         class_mode: Added 'bounding_box' option for bounding box outputs.
         bbox_dict: Required if class_mode 'bounding_box' specified.
             Dict mapping base filenames to bounding boxes.
+        img_info: dict containing map from img_name to height/width.
+        localizer: Model that predicts a bounding box.
+        num_test: How many times to run localizer and average.
     '''
 
     def __init__(self, directory, image_data_generator,
@@ -20,7 +23,10 @@ class MyDirectoryIterator(DirectoryIterator):
                  batch_size=32, shuffle=True, seed=None,
                  save_to_dir=None, save_prefix='', save_format='jpeg',
                  follow_links=False,
-                 bbox_dict=None):
+                 bbox_dict=None,
+                 img_info=None,
+                 localizer=None,
+                 num_test=1):
         super(MyDirectoryIterator, self).__init__(
             directory, image_data_generator,
             target_size=target_size, color_mode=color_mode,
@@ -34,8 +40,15 @@ class MyDirectoryIterator(DirectoryIterator):
             if not bbox_dict:
                 raise Exception('bbox_dict must be specified for '
                                 'class_mode: "bounding_box"')
+        if localizer:
+            if not img_info:
+                raise Exception('img_info must be specified along '
+                                'with localizer')
 
         self.bbox_dict = bbox_dict
+        self.img_info  = img_info
+        self.localizer = localizer
+        self.num_test  = num_test
 
     def next(self):
         with self.lock:
@@ -49,27 +62,36 @@ class MyDirectoryIterator(DirectoryIterator):
             img = load_img(os.path.join(self.directory, fname),
                            grayscale=grayscale)
 
-            # cropped images
-            # if self.localizer:
-            #     pred_boxes = self.localizer.predict(
-            #             img.resize((self.target_size[1], self.target_size[0])))
-            #     resize = np.zeros(4)
-            #     resize[[1, 3]] = img_info[name]['size'][0]
-            #     resize[[0, 2]] = img_info[name]['size'][1]
-            #     resize /= 299.          # input size
-            #     pred_boxes[i] *= resize
-            #     x = img.crop((pred_boxes[0],
-            #                   pred_boxes[1],
-            #                   pred_boxes[0] + pred_boxes[2],
-            #                   pred_boxes[1] + pred_boxes[3]))
-            # else:
-            #     img = img.resize((self.target_size[1], self.target_size[0]))
-            #     x = img_to_array(img, dim_ordering=self.dim_ordering)
+            img_ = img.resize((self.target_size[1], self.target_size[0]))
 
-            img = img.resize((self.target_size[1], self.target_size[0]))
-            x = img_to_array(img, dim_ordering=self.dim_ordering)
-            x = self.image_data_generator.random_transform(x)
-            x = self.image_data_generator.standardize(x)
+            # cropped images
+            if self.localizer:
+                X = np.zeros((self.num_test,) + self.image_shape)
+                resize = np.zeros(4)
+                resize[[1, 3]] = self.img_info[fname]['size'][0] / self.target_size[0]
+                resize[[0, 2]] = self.img_info[fname]['size'][1] / self.target_size[1]
+                for i in xrange(self.num_test):
+                    x = img_to_array(img_, dim_ordering=self.dim_ordering)
+                    x = self.image_data_generator.random_transform(x)
+                    x = self.image_data_generator.standardize(x)
+                    X[i] = x
+                pred_boxes = self.localizer.predict(X)
+                pred_boxes = preds.mean(axis=0)
+                pred_boxes *= resize
+                pred_boxes = np.maximum(pred_boxes, 0)
+                pred_boxes[2] += pred_boxes[0]
+                pred_boxes[3] += pred_boxes[1]
+                pred_boxes[2:]] = np.maximum(pred_boxes[2:], pred_boxes[:2])
+                pred_boxes[[0, 2]] = np.minimum(pred_boxes[[0, 2]], self.img_info[fname]['size'][0])
+                pred_boxes[[1, 3]] = np.minimum(pred_boxes[[1, 3]], self.img_info[fname]['size'][1])
+                pred_boxes = pred_boxes.astype(int)
+                x = img.crop((pred_boxes[0], pred_boxes[1], pred_boxes[2], pred_boxes[3]))
+                x = x.resize((self.target_size[1], self.target_size[0]))
+            else:
+                x = img_to_array(img_, dim_ordering=self.dim_ordering)
+                x = self.image_data_generator.random_transform(x)
+                x = self.image_data_generator.standardize(x)
+
             batch_x[i] = x
         # optionally save augmented images to disk for debugging purposes
         if self.save_to_dir:
