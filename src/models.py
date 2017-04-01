@@ -1,14 +1,17 @@
+import tensorflow as tf
 from keras.layers.convolutional import (Convolution2D, MaxPooling2D,
                                         ZeroPadding2D)
 from keras.layers.core import (Dense, Dropout, Flatten, Activation,
-                               SpatialDropout2D)
-from keras.layers import AveragePooling2D, merge
-from keras.layers.pooling import GlobalAveragePooling2D
+                               SpatialDropout2D, Lambda)
+from keras.layers import AveragePooling2D, Input
+from keras.layers.merge import multiply
+from keras.layers.pooling import GlobalAveragePooling2D, GlobalMaxPooling2D
 from keras.layers.normalization import BatchNormalization
 from keras.regularizers import l2
-from keras.models import Sequential
 from keras.applications.inception_v3 import InceptionV3, conv2d_bn
-from my_keras_model import Model
+from keras.models import Model
+from keras import backend as K
+# from my_keras_model import Model
 
 
 OUTPUT_NAME = 'output'
@@ -159,4 +162,90 @@ def localize(fine_tune=False):
     localize = GlobalAveragePooling2D(name='localize')(localize)
 
     model = Model(model.input, localize)
+    return model
+
+
+def attention_model(fine_tune=False):
+    def attention_layer(x):
+        attention = Convolution2D(num_filters, (3, 3), padding='same')(x)
+        attention = BatchNormalization(axis=3)(attention)
+        attention = Activation('sigmoid')(attention)
+        attention = K.max(attention, axis=3)
+        x = K.permute_dimensions(x, pattern=(0, 3, 2, 1))
+        x = tf.multiply(x, attention)
+        x = K.permute_dimensions(x, pattern=(0, 3, 2, 1))
+        return x
+
+    # 299 x 299 x 3
+    num_filters = 64
+    input_layer = Input((299, 299, 3))
+    x = Convolution2D(num_filters, (3, 3), padding='same')(input_layer)
+    x = BatchNormalization(axis=3, scale=True)(x)
+    x = Activation('relu')(x)
+    x = Convolution2D(num_filters, (3, 3), padding='same')(x)
+    x = BatchNormalization(axis=3)(x)
+    x = Activation('relu')(x)
+    x = Lambda(attention_layer)(x)
+    x = MaxPooling2D((2, 2), strides=(2, 2))(x)
+
+    # 149 x 149 x 64
+    num_filters = 128
+    x = Convolution2D(num_filters, (3, 3), padding='same')(x)
+    x = BatchNormalization(axis=3, scale=True)(x)
+    x = Activation('relu')(x)
+    x = Convolution2D(num_filters, (3, 3), padding='same')(x)
+    x = BatchNormalization(axis=3)(x)
+    x = Activation('relu')(x)
+    x = Lambda(attention_layer)(x)
+    x = MaxPooling2D((2, 2), strides=(2, 2))(x)
+
+    # 74 x 74 x 128
+    num_filters = 256
+    x = Convolution2D(num_filters, (3, 3), padding='same')(x)
+    x = BatchNormalization(axis=3, scale=True)(x)
+    x = Activation('relu')(x)
+    x = Convolution2D(num_filters, (3, 3), padding='same')(x)
+    x = BatchNormalization(axis=3)(x)
+    x = Activation('relu')(x)
+    x = Convolution2D(num_filters, (3, 3), padding='same')(x)
+    x = BatchNormalization(axis=3)(x)
+    x = Activation('relu')(x)
+    x = Lambda(attention_layer)(x)
+    x = MaxPooling2D((2, 2), strides=(2, 2))(x)
+
+    # 37 x 37 x 256
+    num_filters = 512
+    x = Convolution2D(num_filters, (3, 3), padding='same')(x)
+    x = BatchNormalization(axis=3, scale=True)(x)
+    x = Activation('relu')(x)
+    x = Convolution2D(num_filters, (3, 3), padding='same')(x)
+    x = BatchNormalization(axis=3)(x)
+    x = Activation('relu')(x)
+    x = Convolution2D(num_filters, (3, 3), padding='same')(x)
+    x = BatchNormalization(axis=3)(x)
+    x = Activation('relu')(x)
+    x = Lambda(attention_layer)(x)
+    x = MaxPooling2D((2, 2), strides=(2, 2))(x)
+
+    # 18 x 18 x 512
+    num_filters = 512
+    x = Convolution2D(num_filters, (3, 3), padding='same')(x)
+    x = BatchNormalization(axis=3, scale=True)(x)
+    x = Activation('relu')(x)
+    x = Convolution2D(num_filters, (3, 3), padding='same')(x)
+    x = BatchNormalization(axis=3)(x)
+    x = Activation('relu')(x)
+    x = Convolution2D(num_filters, (3, 3), padding='same')(x)
+    x = BatchNormalization(axis=3)(x)
+    x = Activation('relu')(x)
+    x = Lambda(attention_layer)(x)
+    x = MaxPooling2D((2, 2), strides=(2, 2))(x)
+
+    # 9 x 9 x 512
+    x = Flatten()(x)
+    x = Dense(4096, activation='relu')(x)
+    x = Dense(4096, activation='relu')(x)
+    x = Dense(8, activation='softmax', name=OUTPUT_NAME)(x)
+
+    model = Model(input_layer, x)
     return model
