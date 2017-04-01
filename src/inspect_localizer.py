@@ -26,7 +26,7 @@ def main(args):
                         pred[1],
                         pred[0] + pred[2],
                         pred[1] + pred[3]),
-                       fill=(255, 0, 0))
+                       outline=(255, 0, 0))
 
         img.show()
         print pred[0], pred[1], pred[0] + pred[2], pred[1] + pred[3]
